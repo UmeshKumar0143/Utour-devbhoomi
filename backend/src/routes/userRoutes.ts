@@ -80,12 +80,12 @@ router.post("/logout", (req, res) => {
 router.post("/trip/:id", async (req: any, res) => {
   try {
     const { firstName, lastName, dateOfBirth, nationality, aadhaarNumber, gender, profileImage, entryPoint, expectedExitDate, emergencyContacts } = req.body;
-    const { id } = req.params; 
+    const id  = req.params.id; 
 
     const digitalId = `DID-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
     const blockchainResult = await storeUserOnSolana({
-      // id: id,
+      id: id,
       name: firstName + " " + lastName,
       aadhaar: aadhaarNumber as string,
     });
