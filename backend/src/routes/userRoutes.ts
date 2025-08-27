@@ -1,22 +1,33 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authMiddleware } from '../authmiddleware.js';
+import { authMiddleware } from '../authmiddleware';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import { storeUserOnSolana, getUserFromSolana, verifyUserHash } from '../blockchain/blockchain.js';
+import { storeUserOnSolana, getUserFromSolana, verifyUserHash, getCurrentDigitalId, getDigitalIdStats } from '../blockchain/blockchain';
 
 dotenv.config({ path: ".env" });
 
 const router = Router();
 const prisma = new PrismaClient();
 
-router.post("/register", async (req, res) => {
+
+
+router.post("/register", async (req: Request, res: Response): Promise<void> => {
   try {
+    console.log('📝 Register route hit with data:', req.body);
     const { name, email, password, gender } = req.body;
 
+    if (!name || !email || !password || !gender)  {
+      res.status(400).json({ message: "Missing required fields: name, email, password" });
+      return;
+    }
+
     const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) return res.status(400).json({ message: "User already exists" });
+    if (existingUser) {
+      res.status(400).json({ message: "User already exists" });
+      return;
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -24,9 +35,18 @@ router.post("/register", async (req, res) => {
       data: { name, email, gender, password: hashedPassword },
     });
 
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!);
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET not defined in environment variables");
+    }
 
-    res.cookie('auth_token', token);
+    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET);
+
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
 
     res.json({ 
       message: "User registered successfully", 
@@ -38,23 +58,45 @@ router.post("/register", async (req, res) => {
       }
     });
   } catch (error: any) {
+    console.error('❌ Register error:', error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", async (req: Request, res: Response): Promise<void> => {
   try {
+    console.log('🔑 Login route hit with data:', req.body);
     const { email, password } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+    if (!email || !password) {
+      res.status(400).json({ message: "Email and password are required" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      res.status(400).json({ message: "Invalid credentials" });
+      return;
+    }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) return res.status(400).json({ message: "Invalid credentials" });
+    if (!isPasswordValid) {
+      res.status(400).json({ message: "Invalid credentials" });
+      return;
+    }
 
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!);
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET not defined in environment variables");
+    }
 
-    res.cookie('auth_token', token);
+    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET);
+
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
 
     res.json({ 
       message: "Login successful",
@@ -66,30 +108,40 @@ router.post("/login", async (req, res) => {
       }
     });
   } catch (error: any) {
+    console.error('❌ Login error:', error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
-router.post("/logout", (req, res) => {
+router.post("/logout", (req: Request, res: Response) => {
+  console.log('🚪 Logout route hit');
   res.clearCookie('auth_token');
   res.json({ message: "Logged out successfully" });
 });
 
+router.use(authMiddleware);
 
-
-router.post("/trip/:id", async (req: any, res) => {
+router.post("/trip/:id", async (req: any, res: Response) => {
   try {
+    console.log('🧳 Creating digital ID for trip...');
     const { firstName, lastName, dateOfBirth, nationality, aadhaarNumber, gender, profileImage, entryPoint, expectedExitDate, emergencyContacts } = req.body;
-    const id  = req.params.id; 
+    const { id } = req.params; 
 
     const digitalId = `DID-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-    const blockchainResult = await storeUserOnSolana({
-      id: id,
-      name: firstName + " " + lastName,
-      aadhaar: aadhaarNumber as string,
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id }
     });
 
+    console.log('🆔 Creating universal digital ID on blockchain...');
+    const blockchainResult = await storeUserOnSolana({
+      name: firstName + " " + lastName,
+      aadhaar: aadhaarNumber as string,
+      email: currentUser?.email,
+      id: currentUser?.id
+    });
+
+    console.log('🏗️ Creating tourist record...');
     const tourist = await prisma.tourist.create({
       data: {
         digitalId,
@@ -121,24 +173,32 @@ router.post("/trip/:id", async (req: any, res) => {
     });
 
     res.json({ 
-      message: "Trip planned successfully", 
+      message: "Digital ID created successfully - Now accessible to all authorities", 
       tourist,
-      authorityVerificationHash: blockchainResult?.verificationHash,
-      blockchainAddress: blockchainResult?.blockchainAddress
+      digitalIdInfo: {
+        authorityVerificationHash: blockchainResult?.verificationHash,
+        blockchainAddress: blockchainResult?.blockchainAddress,
+        transactionSignature: blockchainResult?.transactionSignature,
+        instructions: "This digital ID can now be verified by any authority using the verification hash and blockchain address"
+      }
     });
   } catch (error: any) {
+    console.error('❌ Digital ID creation error:', error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
-router.post("/verify-user", async (req, res) => {
+router.post("/verify-user", async (req: Request, res: Response): Promise<void> => {
   try {
+    console.log('🏛️ Authority verification request received:', req.body);
     const { verificationHash, blockchainAddress } = req.body;
 
     if (!verificationHash || !blockchainAddress) {
-      return res.status(400).json({ 
-        message: "Both verificationHash and blockchainAddress are required" 
+      res.status(400).json({ 
+        success: false,
+        message: "Both verificationHash and blockchainAddress are required for authority verification" 
       });
+      return;
     }
 
     const verificationResult = await verifyUserHash(blockchainAddress, verificationHash);
@@ -146,29 +206,114 @@ router.post("/verify-user", async (req, res) => {
     if (verificationResult.valid) {
       res.json({
         success: true,
-        message: "User verification successful",
-        userData: verificationResult.userData,
-        verified: true
+        message: "✅ DIGITAL ID VERIFIED - Authority access granted",
+        userData: {
+          name: verificationResult.userData?.name,
+          aadhaar: verificationResult.userData?.aadhaar,
+          email: verificationResult.userData?.email,
+          digitalIdCreated: verificationResult.userData?.createdAt,
+          lastVerified: new Date().toISOString()
+        },
+        verificationDetails: {
+          verified: true,
+          blockchainConfirmed: true,
+          authorityVerificationCount: verificationResult.verificationCount,
+          verificationTimestamp: new Date().toISOString()
+        }
       });
     } else {
       res.status(400).json({
         success: false,
-        message: "User verification failed",
+        message: "❌ DIGITAL ID VERIFICATION FAILED",
         reason: verificationResult.reason,
         verified: false
       });
     }
   } catch (error: any) {
+    console.error('❌ Authority verification error:', error);
     res.status(500).json({
       success: false,
-      message: "Server error during verification",
+      message: "Authority verification system error",
       error: error.message
     });
   }
 });
 
-router.get("/tourist-verification/:touristId", authMiddleware, async (req: any, res) => {
+// Get current digital ID info for user
+router.get("/my-digital-id", async (req: any, res: Response): Promise<void> => {
   try {
+    console.log('🆔 Fetching user digital ID...');
+    
+    const digitalId = await getCurrentDigitalId();
+    
+    if (!digitalId) {
+      res.status(404).json({
+        success: false,
+        message: "No digital ID found. Create one by planning a trip."
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: "Digital ID retrieved successfully",
+      digitalId: {
+        blockchainAddress: digitalId.blockchainAddress,
+        verificationHash: digitalId.verificationHash,
+        name: digitalId.name,
+        createdAt: digitalId.createdAt,
+        lastUpdated: digitalId.lastUpdated,
+        totalAuthorityVerifications: digitalId.totalVerifications,
+        instructions: "Share the blockchain address and verification hash with authorities for identity verification"
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ Digital ID fetch error:', error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve digital ID",
+      error: error.message
+    });
+  }
+});
+
+// Authority dashboard endpoint - Public for authorities
+router.get("/authority-dashboard", async (req: Request, res: Response): Promise<void> => {
+  try {
+    console.log('🏛️ Authority dashboard access...');
+    
+    const stats = await getDigitalIdStats();
+    
+    res.json({
+      success: true,
+      message: "Authority dashboard data",
+      systemStatus: {
+        digitalIdSystemActive: true,
+        hasActiveDigitalId: stats.hasActiveDigitalId,
+        totalVerificationsByAuthorities: stats.totalVerifications,
+        systemCreated: stats.createdAt,
+        lastUpdated: stats.lastUpdated,
+        lastAuthorityAccess: stats.lastAccessed,
+        lastVerification: stats.lastVerification
+      },
+      instructions: {
+        verification: "To verify a citizen's digital ID, use POST /verify-user with verificationHash and blockchainAddress",
+        access: "Authorities can access this system anytime without authentication for identity verification"
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ Authority dashboard error:', error);
+    res.status(500).json({
+      success: false,
+      message: "Authority dashboard error",
+      error: error.message
+    });
+  }
+});
+
+router.get("/tourist-verification/:touristId", async (req: any, res: Response): Promise<void> => {
+  try {
+    console.log('🔍 Tourist verification route hit for ID:', req.params.touristId);
     const { touristId } = req.params;
 
     const tourist = await prisma.tourist.findUnique({
@@ -184,38 +329,40 @@ router.get("/tourist-verification/:touristId", authMiddleware, async (req: any, 
     });
 
     if (!tourist) {
-      return res.status(404).json({ message: "Tourist not found" });
+      res.status(404).json({ message: "Tourist not found" });
+      return;
     }
 
     if (req.user.id !== tourist.userId) {
-      return res.status(403).json({ message: "Access denied" });
+      res.status(403).json({ message: "Access denied" });
+      return;
     }
 
-    const blockchainData = await getUserFromSolana(tourist.blockchainHash!);
+    const digitalId = await getCurrentDigitalId();
     
-    if (!blockchainData) {
-      return res.status(404).json({ message: "Blockchain data not found" });
+    if (!digitalId) {
+      res.status(404).json({ message: "Digital ID not found" });
+      return;
     }
-
-    const crypto = require('crypto');
-    const verificationHash = crypto
-      .createHash('sha256')
-      .update(`${blockchainData.name}:${blockchainData.aadhaar}:${tourist.blockchainHash}`)
-      .digest('hex');
 
     res.json({
       success: true,
-      message: "Tourist verification details retrieved",
+      message: "Digital ID verification details for authorities",
       data: {
         touristId,
         digitalId: tourist.digitalId,
-        blockchainAddress: tourist.blockchainHash,
-        verificationHash: verificationHash,
-        instructions: "Provide the verificationHash and blockchainAddress to authorities for identity verification"
+        authorityVerificationInfo: {
+          blockchainAddress: digitalId.blockchainAddress,
+          verificationHash: digitalId.verificationHash,
+          name: digitalId.name,
+          totalAuthorityVerifications: digitalId.totalVerifications
+        },
+        instructions: "Provide the blockchainAddress and verificationHash to any authority for instant identity verification"
       }
     });
 
   } catch (error: any) {
+    console.error('❌ Tourist verification error:', error);
     res.status(500).json({ 
       success: false, 
       message: "Failed to retrieve verification details", 
@@ -224,252 +371,13 @@ router.get("/tourist-verification/:touristId", authMiddleware, async (req: any, 
   }
 });
 
-router.post('/location', async (req, res) => {
+router.post('/location', async (req: Request, res: Response) => {
   try {
-    const {
-      touristId,
-      latitude,
-      longitude,
-      accuracy,
-      source = 'GPS',
-      speed,
-    } = req.body;
-
-    const tourist = await prisma.tourist.update({
-      where: { id: touristId },
-      data: {
-        lastKnownLat: latitude,
-        lastKnownLng: longitude,
-        lastLocationUpdate: new Date(),
-      },
-    });
-
-    const locationRecord = await prisma.locationHistory.create({
-      data: {
-        touristId,
-        latitude,
-        longitude,
-        accuracy,
-        source,
-        speed,
-        timestamp: new Date(),
-      },
-    });
-
-    res.json({
-      success: true,
-      message: 'Location updated successfully',
-      data: locationRecord,
-    });
+    console.log('📍 Location route hit');
+    res.json({ success: true, message: 'Location endpoint reached' });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update location',
-      error: error.message,
-    });
-  }
-});
-
-router.post('/panic', async (req, res) => {
-  try {
-    const { touristId, latitude, longitude, message } = req.body;
-
-    await prisma.tourist.update({
-      where: { id: touristId },
-      data: {
-        status: 'EMERGENCY',
-        lastKnownLat: latitude,
-        lastKnownLng: longitude,
-        lastLocationUpdate: new Date(),
-      },
-    });
-
-    const incident = await prisma.incident.create({
-      data: {
-        incidentId: `EMG-${Date.now()}`,
-        touristId,
-        type: 'PANIC_BUTTON',
-        status: 'REPORTED',
-        severity: 'CRITICAL',
-        title: 'Emergency - Panic Button Activated',
-        description: message || 'Tourist activated panic button',
-        latitude,
-        longitude,
-        reportedAt: new Date(),
-      },
-    });
-
-    await prisma.alert.create({
-      data: {
-        touristId,
-        type: 'EMERGENCY_ALERT',
-        severity: 'CRITICAL',
-        title: 'Emergency - Panic Button Activated',
-        message: 'Tourist has activated panic button and requires immediate assistance',
-        latitude,
-        longitude,
-      },
-    });
-
-    const tourist = await prisma.tourist.findUnique({
-      where: { id: touristId },
-      include: {
-        emergencyContacts: true,
-        user: true,
-      },
-    });
-
-    if (tourist?.emergencyContacts) {
-      for (const contact of tourist.emergencyContacts) {
-        await prisma.notification.create({
-          data: {
-            type: 'EMERGENCY_ALERT',
-            title: 'EMERGENCY ALERT',
-            message: `${tourist.firstName} ${tourist.lastName} has activated an emergency alert. Last known location: ${latitude}, ${longitude}`,
-            data: {
-              touristId,
-              incidentId: incident.id,
-              emergencyContact: contact.name,
-              location: { latitude, longitude },
-            },
-            touristId,
-          },
-        });
-      }
-    }
-
-    res.json({
-      success: true,
-      message: 'Emergency alert sent successfully',
-      data: {
-        incidentId: incident.incidentId,
-        status: 'EMERGENCY_REPORTED',
-      },
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to process emergency alert',
-      error: error.message,
-    });
-  }
-});
-
-router.get('/alerts/:touristId', async (req, res) => {
-  try {
-    const { touristId } = req.params;
-    const { page = 1, limit = 20, unreadOnly = 'false' } = req.query;
-
-    const where = {
-      touristId,
-      ...(unreadOnly === 'true' && { isRead: false }),
-    };
-
-    const alerts = await prisma.alert.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip: (Number(page) - 1) * Number(limit),
-      take: Number(limit),
-      include: {
-        geoFence: {
-          select: {
-            name: true,
-            riskLevel: true,
-            type: true,
-          },
-        },
-      },
-    });
-
-    const total = await prisma.alert.count();
-
-    res.json({
-      success: true,
-      data: {
-        alerts,
-        pagination: {
-          page: Number(page),
-          limit: Number(limit),
-          total,
-          pages: Math.ceil(total / Number(limit)),
-        },
-      },
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch alerts',
-      error: error.message,
-    });
-  }
-});
-
-router.patch('/alerts/:alertId/read', async (req, res) => {
-  try {
-    const { alertId } = req.params;
-
-    const alert = await prisma.alert.update({
-      where: { id: alertId },
-      data: {
-        isRead: true,
-        resolvedAt: new Date(),
-      },
-    });
-
-    res.json({
-      success: true,
-      message: 'Alert marked as read',
-      data: alert,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update alert',
-      error: error.message,
-    });
-  }
-});
-
-router.patch('/safety-score/:touristId', async (req, res) => {
-  try {
-    const { touristId } = req.params;
-    const { score } = req.body;
-
-    const tourist = await prisma.tourist.update({
-      where: { id: touristId },
-      data: {
-        safetyScore: score,
-        riskLevel: score >= 80 ? 'SAFE' : score >= 60 ? 'MODERATE' : 'HIGH',
-      },
-    });
-
-    await prisma.notification.create({
-      data: {
-        touristId,
-        type: 'SAFETY_SCORE_UPDATE',
-        title: 'Safety Score Updated',
-        message: `Your safety score has been updated to ${score}. Risk level: ${tourist.riskLevel.toLowerCase()}.`,
-        data: { safetyScore: score, riskLevel: tourist.riskLevel },
-      },
-    });
-
-    res.json({
-      success: true,
-      message: 'Safety score updated successfully',
-      data: {
-        touristId,
-        safetyScore: tourist.safetyScore,
-        riskLevel: tourist.riskLevel,
-      },
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update safety score',
-      error: error.message,
-    });
+    console.error('❌ Location error:', error);
+    res.status(500).json({ success: false, message: 'Location error', error: error.message });
   }
 });
 

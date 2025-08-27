@@ -67,10 +67,7 @@ enum TransactionStatus {
   FAILED
 }
 
-enum Gender {
-  MALE
-  FEMALE
-}
+
 
 
 model User {
@@ -83,7 +80,7 @@ model User {
   role              UserRole?         @default(TOURIST)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
-  gender            Gender?
+  gender            String?
 
   tourist           Tourist?
   emergencyContacts  EmergencyContact[] @relation("UserEmergencyContacts")

@@ -1,1 +1,1 @@
-{"root":["./src/authmiddleware.ts","./src/index.ts","./src/blockchain/blockchain.ts","./src/routes/userRoutes.ts"],"version":"5.9.2"}
+{"root":["./src/authmiddleware.ts","./src/index.ts","./src/types.ts","./src/blockchain/blockchain.ts","./src/routes/userRoutes.ts"],"version":"5.9.2"}
