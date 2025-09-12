@@ -70,28 +70,29 @@ enum TransactionStatus {
 
 
 
-model User {
-  id                String            @id @default(cuid())
-  name              String
-  email             String?           @unique
-  password          String
-  blockchainHash    String?
-  phone             String?           @unique
-  role              UserRole?         @default(TOURIST)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  gender            String?
+  model User {
+    id                String            @id @default(cuid())
+    name              String
+    email             String?           @unique
+    password          String
+    blockchainHash    String?
+    phone             String?           @unique
+    role              UserRole?         @default(TOURIST)
+    createdAt         DateTime          @default(now())
+    updatedAt         DateTime          @updatedAt
+    gender            String?
 
-  tourist           Tourist?
-  emergencyContacts  EmergencyContact[] @relation("UserEmergencyContacts")
-  notifications     Notification[]
+    tourist           Tourist?
+    emergencyContacts  EmergencyContact[] @relation("UserEmergencyContacts")
+    notifications     Notification[]
 
-  @@map("users")
-}
+    @@map("users")
+  }
 
 model Police {
   id                String            @id @default(uuid())
   department        String            @unique
+  email             String            @unique
   password          String
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt

@@ -1,0 +1,15 @@
+export const policeDepartments = [
+  { value: "dehradun", label: "Dehradun " },
+  { value: "haridwar", label: "Haridwar " },
+  { value: "uttarkashi", label: "Uttarkashi " },
+  { value: "chamoli", label: "Chamoli " },
+  { value: "rudraprayag", label: "Rudraprayag " },
+  { value: "tehrigarhwal", label: "Tehri Garhwal " },
+  { value: "garhwal", label: "Pauri Garhwal " },
+  { value: "pithoragarh", label: "Pithoragarh " },
+  { value: "bageshwar", label: "Bageshwar " },
+  { value: "almora", label: "Almora " },
+  { value: "champawat", label: "Champawat " },
+  { value: "nainital", label: "Nainital " },
+  { value: "udhamsinghnagar", label: "Udham Singh Nagar " },
+];

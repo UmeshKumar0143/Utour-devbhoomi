@@ -12,23 +12,24 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "@prisma/client": "^5.0.0",
-    "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.0",
-    "dotenv": "^16.0.3",
-    "cors": "^2.8.5",
+    "@prisma/client": "^6.14.0",
     "@solana/web3.js": "^1.87.6",
-    "cookie-parser": "^1.4.6"
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "prisma": "^6.14.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.17",
     "@types/bcryptjs": "^2.4.2",
-    "@types/jsonwebtoken": "^9.0.2",
-    "@types/cors": "^2.8.13",
-    "@types/node": "^20.0.0",
     "@types/cookie-parser": "^1.4.3",
-    "typescript": "^5.0.0",
-    "tsx": "^4.0.0"
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "@types/jsonwebtoken": "^9.0.2",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
   }
 }

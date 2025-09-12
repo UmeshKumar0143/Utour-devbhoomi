@@ -21,66 +21,7 @@ const PoliceAlerts = () => {
       affectedTourists: 45,
       response: "Evacuation in progress"
     },
-    {
-      id: "ALT002", 
-      type: "High",
-      title: "Crowd Density Alert",
-      description: "Tourist count at Kedarnath Temple exceeding safe capacity limits",
-      location: "Kedarnath Temple",
-      createdBy: "SI Sharma",
-      timestamp: "2024-01-15 12:15",
-      status: "Resolved",
-      affectedTourists: 150,
-      response: "Crowd dispersed successfully"
-    },
-    {
-      id: "ALT003",
-      type: "Medium",
-      title: "Road Closure Notification",
-      description: "NH7 blocked due to landslide, alternative routes suggested",
-      location: "NH7 - Rishikesh to Joshimath",
-      createdBy: "Constable Patel",
-      timestamp: "2024-01-15 10:45",
-      status: "Active",
-      affectedTourists: 200,
-      response: "Traffic diverted to alternate route"
-    },
-    {
-      id: "ALT004",
-      type: "Low",
-      title: "Weather Advisory",
-      description: "Light snowfall expected in higher altitudes, tourists advised to carry warm clothing",
-      location: "Valley of Flowers",
-      createdBy: "HC Singh",
-      timestamp: "2024-01-15 08:30",
-      status: "Active",
-      affectedTourists: 30,
-      response: "Advisory sent to all tourists"
-    },
-    {
-      id: "ALT005",
-      type: "High",
-      title: "Medical Emergency Alert",
-      description: "Tourist requiring immediate medical attention, helicopter rescue initiated",
-      location: "Gangotri Glacier",
-      createdBy: "Inspector Verma",
-      timestamp: "2024-01-14 16:20",
-      status: "Resolved",
-      affectedTourists: 1,
-      response: "Tourist safely evacuated"
-    },
-    {
-      id: "ALT006",
-      type: "Medium",
-      title: "Wildlife Encounter Warning",
-      description: "Bear sighting reported near trekking trail, tourists advised to avoid area",
-      location: "Jim Corbett National Park",
-      createdBy: "Forest Guard Thapa",
-      timestamp: "2024-01-14 14:10",
-      status: "Active",
-      affectedTourists: 25,
-      response: "Area cordoned off, patrol increased"
-    }
+    
   ];
 
   const getTypeColor = (type: string) => {

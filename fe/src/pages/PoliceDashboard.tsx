@@ -3,12 +3,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Users, FileText, AlertTriangle, BarChart3, Shield, LogOut, Bell, Radio } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import SimulationMap from "@/components/SimulationMap";
-import policeBackground from "@/assets/police-dashboard-bg.jpg";
+import policeBackground from "@/assests/police-dashboard-bg.jpg";
 
 const PoliceDashboard = () => {
-  const { user, logout } = useAuth();
   const quickActions = [
     { icon: Users, title: "Manage Crowd", description: "Monitor tourist density", link: "/police-dashboard/manage-crowd", color: "bg-blue-100 text-blue-800" },
     { icon: AlertTriangle, title: "View Alerts", description: "Check safety alerts", link: "/police-dashboard/alerts", color: "bg-yellow-100 text-yellow-800" },
@@ -18,9 +16,7 @@ const PoliceDashboard = () => {
 
   const currentAlerts = [
     { id: 1, type: "High", location: "Kedarnath Temple", message: "Crowd density exceeding safe limits", time: "5 min ago" },
-    { id: 2, type: "Medium", location: "Badrinath Route", message: "Traffic congestion reported", time: "15 min ago" },
-    { id: 3, type: "Low", location: "Rishikesh Ghat", message: "Normal crowd flow", time: "30 min ago" },
-    { id: 4, type: "High", location: "Valley Trek", message: "Weather conditions deteriorating", time: "45 min ago" }
+    { }
   ];
 
   const recentActivity = [
@@ -78,18 +74,6 @@ const PoliceDashboard = () => {
               <span className="text-muted-foreground">Control Dashboard</span>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                <Radio className="mr-2 h-4 w-4" />
-                Emergency Radio
-              </Button>
-              <Button variant="outline" size="sm">
-                <Bell className="mr-2 h-4 w-4" />
-                Alerts
-              </Button>
-              <Button variant="outline" size="sm">
-                <Shield className="mr-2 h-4 w-4" />
-                Profile
-              </Button>
               <Link to="/">
                 <Button variant="outline" size="sm">
                   <LogOut className="mr-2 h-4 w-4" />

@@ -2,9 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MapPin, Mountain, Waves, TreePine, Users, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
-import heroImage from "@/assets/uttarakhand-landscape.jpg";
-import templeImage from "@/assets/temple-mountains.jpg";
-import gangaImage from "@/assets/ganga-ghats.jpg";
+import heroImage from "@/assests/uttarakhand-hero.jpg";
+import templeImage from "../assests/temple-mountains.jpg";
+import gangaImage from "../assests/ganga-ghats.jpg";
 
 const Index = () => {
   const features = [
@@ -64,13 +64,13 @@ const Index = () => {
             <Link to="/register-tourist">
               <Button size="lg" className="hero-button bg-primary hover:bg-primary-glow text-primary-foreground shadow-mountain px-8 py-6 text-lg font-semibold animate-glow">
                 <Users className="mr-2 h-5 w-5" />
-                Register as Tourist
+                Register 
               </Button>
             </Link>
-            <Link to="/register-police">
+            <Link to="/login">
               <Button size="lg" variant="outline" className="hero-button-outline bg-white/10 text-white border-white/30 hover:bg-white/20 px-8 py-6 text-lg font-semibold backdrop-blur-sm">
                 <ShieldCheck className="mr-2 h-5 w-5" />
-                Register as Police
+                Login  
               </Button>
             </Link>
           </div>

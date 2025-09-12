@@ -3,11 +3,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import RegisterTourist from "./pages/RegisterTourist";
-import RegisterPolice from "./pages/RegisterPolice";
 import Login from "./pages/Login";
 import EmailVerification from "./pages/EmailVerification";
 import TouristDashboard from "./pages/TouristDashboard";
@@ -30,7 +28,6 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -40,7 +37,6 @@ const App = () => (
 <Route path="/tourist-profile" element={<TouristProfile />} />
             <Route path="/" element={<Index />} />
             <Route path="/register-tourist" element={<RegisterTourist />} />
-            <Route path="/register-police" element={<RegisterPolice />} />
             <Route path="/login" element={<Login />} />
             <Route path="/email-verification" element={<EmailVerification />} />
             <Route path="/tourist-dashboard" element={<TouristDashboard />} />
@@ -59,7 +55,6 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
-    </AuthProvider>
   </QueryClientProvider>
 );
 

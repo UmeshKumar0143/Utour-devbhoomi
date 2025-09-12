@@ -2,57 +2,101 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { LogIn, ArrowLeft } from "lucide-react";
+import { LogIn, ArrowLeft, Shield } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import templeImage from "@/assets/temple-mountains.jpg";
+import templeImage from "@/assests/temple-mountains.jpg";
+import { Select, SelectTrigger } from "@radix-ui/react-select";
+import { SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { policeDepartments } from "@/lib/data";
+import { BACKEND_URL } from "@/config";
+
+
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { login, isLoading } = useAuth();
-  const [userType, setUserType] = useState<string>("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [userType, setUserType] = useState<string>("");
+  const [policeDepartment, setPoliceDepartment] = useState<string>("");
+  const [isLoading , setisLoading ] = useState(false); 
+  const handleUserTypeChange = (value: string) => {
+    setUserType(value);
+    if (value !== "police") {
+      setPoliceDepartment("");
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!userType || !email || !password) {
+    if (!email || !password || !userType) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all fields",
+        description: "Please fill in all required fields",
         variant: "destructive",
       });
       return;
     }
 
-    const result = await login(email, password, userType);
-    
-    if (result.success) {
+    if (userType === "police" && !policeDepartment) {
       toast({
-        title: "Login Successful",
-        description: `Welcome back! Tourist ID: ${userType === 'tourist' ? 'Generated' : 'N/A'}`,
-      });
-
-      // Route to appropriate dashboard based on user type
-      setTimeout(() => {
-        if (userType === "tourist") {
-          navigate("/tourist-dashboard");
-        } else if (userType === "police") {
-          navigate("/police-dashboard");
-        }
-      }, 1500);
-    } else {
-      toast({
-        title: "Login Failed",
-        description: result.error || "Please try again",
+        title: "Missing Information",
+        description: "Please select your police department",
         variant: "destructive",
       });
+      return;
+    }
+
+    try {
+      setisLoading(true); 
+      const loginData = {
+        email,
+        password,
+        userType,
+        ...(userType === "police" && { policeDepartment })
+      };
+
+      const response = await fetch(`http://localhost:5000/api/users/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginData),
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Login Successful ",
+        });
+
+        setTimeout(() => {
+          if (userType === "police") {
+            navigate("/police-dashboard");
+          } else {
+            navigate("/tourist-dashboard");
+          }
+        }, 1500);
+      } else {
+        toast({
+          title: "Login Failed",
+          description: data.message || "Please try again",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: "Login Failed",
+        description: "Network error. Please try again.",
+        variant: "destructive",
+      });
+    }finally{
+      setisLoading(false); 
     }
   };
 
@@ -79,89 +123,117 @@ const Login = () => {
           <Card className="shadow-card">
             <CardHeader className="text-center">
               <div className="mx-auto w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mb-4">
-                <LogIn className="h-6 w-6 text-accent" />
+                {userType === "police" ? (
+                  <Shield className="h-6 w-6 text-accent" />
+                ) : (
+                  <LogIn className="h-6 w-6 text-accent" />
+                )}
               </div>
-              <CardTitle className="font-heading text-2xl">Welcome Back</CardTitle>
+              <CardTitle className="font-heading text-2xl">Welcome</CardTitle>
               <CardDescription>
-                Login to access your Utour account
+                {userType === "police" 
+                  ? "Officer login to Utour security portal" 
+                  : "Login to access your Utour account"
+                }
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-6">
-              <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="userType">User Type *</Label>
+                <Select value={userType} onValueChange={handleUserTypeChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select user type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tourist">Tourist</SelectItem>
+                    <SelectItem value="police">Police </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {userType === "police" && (
                 <div className="space-y-2">
-                  <Label htmlFor="userType">User Type</Label>
-                  <Select value={userType} onValueChange={setUserType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select user type" />
+                  <Label htmlFor="policeDepartment">Police Department *</Label>
+                  <Select value={policeDepartment} onValueChange={setPoliceDepartment}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select your department" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="tourist">Tourist</SelectItem>
-                      <SelectItem value="police">Police Officer</SelectItem>
+                      {policeDepartments.map((dept) => (
+                        <SelectItem key={dept.value} value={dept.value}>
+                          {dept.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
+              )}
 
+              <form onSubmit={handleLogin} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email">Email Address *</Label>
                   <Input 
                     id="email" 
                     type="email" 
-                    placeholder="your.email@example.com" 
+                    placeholder={userType === "police" ? "officer.email@ukpolice.gov.in" : "your.email@example.com"}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Password *</Label>
                   <Input 
                     id="password" 
                     type="password" 
                     placeholder="Enter your password" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    required
                   />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="remember" />
-                    <Label htmlFor="remember" className="text-sm text-muted-foreground">
-                      Remember me
-                    </Label>
-                  </div>
-                  <Link to="/email-verification" className="text-sm text-primary hover:underline">
-                    Forgot password?
-                  </Link>
                 </div>
 
                 <Button 
                   type="submit" 
-                  disabled={isLoading}
-                  className="w-full bg-accent hover:bg-accent-glow text-accent-foreground shadow-golden"
+                  disabled={isLoading || !userType}
+                  className={`w-full shadow-golden ${
+                    userType === "police" 
+                      ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                      : "bg-accent hover:bg-accent-glow text-accent-foreground"
+                  }`}
                 >
-                  {isLoading ? "Logging in..." : "Login"}
+                  {isLoading ? "Logging in..." : `Login as ${userType === "police" ? "Officer" : "Tourist"}`}
                 </Button>
               </form>
 
               <div className="text-center space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  Don't have an account?
+                  {userType === "police" 
+                    ? "Need access? Contact your department administrator."
+                    : "Don't have an account?"
+                  }
                 </p>
-                <div className="flex flex-col space-y-2">
-                  <Link to="/register-tourist">
-                    <Button variant="outline" className="w-full">
-                      Register as Tourist
-                    </Button>
-                  </Link>
-                  <Link to="/register-police">
-                    <Button variant="outline" className="w-full">
-                      Register as Police
-                    </Button>
-                  </Link>
-                </div>
+                {userType !== "police" && (
+                  <div className="flex flex-col space-y-2">
+                    <Link to="/register-tourist">
+                      <Button variant="outline" className="w-full">
+                        Register as Tourist
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
+
+              {userType === "police" && (
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    <Shield className="inline h-3 w-3 mr-1" />
+                    Authorized personnel only. All access is logged and monitored.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
