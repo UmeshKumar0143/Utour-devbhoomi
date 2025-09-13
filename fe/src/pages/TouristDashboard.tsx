@@ -10,34 +10,32 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useCurrentUser } from "@/store/useCurrentUser";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import { BACKEND_URL } from "@/config";
+import { Trip } from "@/lib/types";
 
-interface Trip {
-  id: string;
-  destination: string;
-  date: string;
-  status: string;
-  type: string;
-}
+
 
 const TouristDashboard = () => {
-  const { user, clearUser } = useCurrentUser(); 
+  const { user, clearUser } = useCurrentUser();
   const { speak, isPlaying, stop } = useTextToSpeech();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch user trips on component mount
+
+
+
   useEffect(() => {
     const fetchUserTrips = async () => {
       try {
-        const response = await fetch('/api/trips/user', {
+        const response = await fetch(`${BACKEND_URL}/users/trips/cmeto1ncm00007mbutoip0iqp`, {
           credentials: 'include'
         });
-        
+
         if (response.ok) {
           const data = await response.json();
-          setTrips(data.trips || []);
+        setTrips(data.trips || []);
         }
       } catch (error) {
         console.error('Error fetching trips:', error);
@@ -73,7 +71,7 @@ const TouristDashboard = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/auth/logout', {
+      const response = await fetch(`${BACKEND_URL}/users/logout`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -82,15 +80,13 @@ const TouristDashboard = () => {
       });
 
       if (response.ok) {
-        // Clear user from store
         clearUser();
-        
+
         toast({
           title: "Logged out successfully",
           description: "See you again soon!",
         });
 
-        // Redirect to home page
         setTimeout(() => {
           navigate("/");
         }, 1000);
@@ -207,24 +203,21 @@ const TouristDashboard = () => {
               const isDisabled = action.disabled;
               const CardWrapper = isDisabled ? 'div' : Link;
               const cardProps = isDisabled ? {} : { to: action.link };
-              
+
               return (
                 <CardWrapper key={index} {...cardProps}>
-                  <Card className={`transition-all duration-300 ${
-                    isDisabled 
-                      ? 'opacity-50 cursor-not-allowed' 
-                      : action.highlight 
-                        ? 'hover:shadow-lg hover:-translate-y-1 cursor-pointer border-primary/30 bg-primary/5' 
+                  <Card className={`transition-all duration-300 ${isDisabled
+                      ? 'opacity-50 cursor-not-allowed'
+                      : action.highlight
+                        ? 'hover:shadow-lg hover:-translate-y-1 cursor-pointer border-primary/30 bg-primary/5'
                         : 'hover:shadow-card hover:-translate-y-1 cursor-pointer'
-                  }`}>
+                    }`}>
                     <CardContent className="p-6 text-center">
                       <div className="mb-4 flex justify-center">
-                        <div className={`p-3 rounded-full ${
-                          action.highlight ? 'bg-primary/20' : 'bg-primary/10'
-                        }`}>
-                          <action.icon className={`h-6 w-6 ${
-                            action.highlight ? 'text-primary' : 'text-primary'
-                          }`} />
+                        <div className={`p-3 rounded-full ${action.highlight ? 'bg-primary/20' : 'bg-primary/10'
+                          }`}>
+                          <action.icon className={`h-6 w-6 ${action.highlight ? 'text-primary' : 'text-primary'
+                            }`} />
                         </div>
                       </div>
                       <h3 className="font-heading text-lg font-semibold mb-2">{action.title}</h3>

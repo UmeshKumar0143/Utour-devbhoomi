@@ -10,12 +10,15 @@ import templeImage from "@/assests/temple-mountains.jpg";
 import { Select, SelectTrigger } from "@radix-ui/react-select";
 import { SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { policeDepartments } from "@/lib/data";
+import { useCurrentUser } from "@/store/useCurrentUser";
 import { BACKEND_URL } from "@/config";
 
 
 
 const Login = () => {
   const navigate = useNavigate();
+  const {setUser} = useCurrentUser(); 
+
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -58,7 +61,7 @@ const Login = () => {
         ...(userType === "police" && { policeDepartment })
       };
 
-      const response = await fetch(`http://localhost:5000/api/users/login`, {
+      const response = await fetch(`${BACKEND_URL}/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,6 +73,8 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
+        setUser(data.user); 
+        
         toast({
           title: "Login Successful ",
         });

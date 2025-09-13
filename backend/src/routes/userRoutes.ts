@@ -53,6 +53,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
         name: user.name,
         email: user.email,
         gender: user.gender,
+        role: user.role, 
       },
     });
   } catch (error: any) {
@@ -197,6 +198,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
         name: user.name,
         email: user.email,
         gender: user.gender,
+        role: user.role, 
       },  
     });
   }
@@ -339,7 +341,7 @@ router.post('/verify-user', async (req: Request, res: Response): Promise<void> =
   }
 });
 
-router.get("/tourist/:id",async(req,res)=> {
+router.get("/trips/:id",async(req,res)=> {
   const userId = req.params.id; 
 
   try{
@@ -368,7 +370,7 @@ router.get("/tourist/:id",async(req,res)=> {
       return; 
     }
 
-    res.json({message: "Tourist found ", tourist});  
+    res.json({message: "Tourist found ", trips: tourist});  
 
   }catch(e){
     console.log("Error Occured " , e); 

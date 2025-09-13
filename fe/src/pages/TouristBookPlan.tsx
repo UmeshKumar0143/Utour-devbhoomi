@@ -10,8 +10,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarIcon, ArrowLeft, Users, CreditCard, Shield, Info, QrCode, Download, Copy, Check, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
+import { useCurrentUser } from "@/store/useCurrentUser";
+import { BACKEND_URL } from "@/config";
 
 const TouristBookPlan = () => {
+
+  const user = useCurrentUser((state)=>state.user); 
+
+
   const [date, setDate] = useState<Date>();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -100,7 +106,7 @@ const TouristBookPlan = () => {
     try {
       
       const token = cookieStore.get('token'); 
-      const response = await fetch(`http://localhost:5000/api/users/trip/cmeto1ncm00007mbutoip0iqp`, {
+      const response = await fetch(`${BACKEND_URL}/users/trip/${user.id}`, {
         method: 'POST',
         credentials: "include",
         headers: {

@@ -11,6 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCurrentUser } from "@/store/useCurrentUser";
 import { useToast } from "@/hooks/use-toast";
 import templeImage from "@/assests/temple-mountains.jpg";
+import { CurrentUser } from "@/lib/types";
 
 const RegisterTourist = () => {
   const [formData, setFormData] = useState({
@@ -85,7 +86,7 @@ const RegisterTourist = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: 'include', // Important for cookies
+        credentials: 'include', 
         body: JSON.stringify({
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
@@ -99,16 +100,12 @@ const RegisterTourist = () => {
 
       const data = await response.json();
 
+      const user : CurrentUser = data.user; 
+
       if (response.ok) {
-        // Store user in Zustand
-        setUser({
-          id: data.user.id,
-          name: data.user.name,
-          email: data.user.email,
-          role: 'tourist',
-          gender: data.user.gender,
-          phone: data.user.phone,
-        });
+       
+        setUser(user); 
+        
 
         toast({
           title: "Registration Successful!",
