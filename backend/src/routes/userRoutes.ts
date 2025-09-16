@@ -370,7 +370,7 @@ router.get("/trips/:id",async(req,res)=> {
       return; 
     }
 
-    res.json({message: "Tourist found ", trips: tourist});  
+    res.json({message: "Tourist found ", trips:[ tourist]});  
 
   }catch(e){
     console.log("Error Occured " , e); 

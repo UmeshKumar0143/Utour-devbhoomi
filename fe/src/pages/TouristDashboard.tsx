@@ -102,7 +102,6 @@ const TouristDashboard = () => {
       });
     }
   };
-
   return (
     <div
       className="min-h-screen relative"
@@ -231,46 +230,53 @@ const TouristDashboard = () => {
               );
             })}
           </div>
-
+            
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Recent Bookings */}
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="font-heading">Your Trips</CardTitle>
-                <CardDescription>
-                  {trips.length > 0 ? "Your upcoming spiritual journeys" : "No trips booked yet"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                ) : trips.length > 0 ? (
-                  trips.slice(0, 3).map((trip, index) => (
-                    <div key={index} className="flex justify-between items-center p-4 bg-muted/30 rounded-lg">
-                      <div>
-                        <h4 className="font-semibold">{trip.destination}</h4>
-                        <p className="text-sm text-muted-foreground">{trip.date} • {trip.type}</p>
-                      </div>
-                      <Badge variant={trip.status === "Confirmed" ? "default" : "secondary"}>
-                        {trip.status}
-                      </Badge>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No trips booked yet</p>
-                    <Link to="/tourist-dashboard/book-plan">
-                      <Button variant="outline" size="sm" className="mt-2">
-                        Book Your First Trip
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+         <Card className="shadow-card">
+  <CardHeader>
+    <CardTitle className="font-heading">Your Trips</CardTitle>
+    <CardDescription>
+      {trips.length > 0 ? "Your upcoming spiritual journeys" : "No trips booked yet"}
+    </CardDescription>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    {isLoading ? (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    ) : trips.length > 0 ? (
+      trips.slice(0, 3).map((trip, index) => (
+        <div
+          key={trip.id || index}
+          className="flex justify-between items-center p-4 bg-muted/30 rounded-lg"
+        >
+          <div>
+            <h4 className="font-semibold">{trip.destination || trip.entryPoint}</h4>
+            <p className="text-sm text-muted-foreground">
+              {trip.date || new Date(trip.entryDate).toLocaleDateString()} •{" "}
+              {trip.type || trip.nationality}
+            </p>
+          </div>
+          <Badge variant={trip.status === "Confirmed" ? "default" : "secondary"}>
+            {trip.status}
+          </Badge>
+        </div>
+      ))
+    ) : (
+      <div className="text-center py-8 text-muted-foreground">
+        <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+        <p>No trips booked yet</p>
+        <Link to="/tourist-dashboard/book-plan">
+          <Button variant="outline" size="sm" className="mt-2">
+            Book Your First Trip
+          </Button>
+        </Link>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
 
             {/* Latest Alerts */}
             <Card className="shadow-card">
